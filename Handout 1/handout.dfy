@@ -1,10 +1,11 @@
 /**
 CVS 2021-22 Handout 1
-Realizado por:
+Authors
 Gonçalo Martins Lourenço nº55780
 Joana Soares Faria  nº55754
  */
 
+// First Exercise
 lemma peasantMultLemma(a:int, b:int)
     requires b >= 0
     ensures b % 2 == 0 ==> (a * b == 2 * a * b / 2)
@@ -20,8 +21,6 @@ lemma peasantMultLemma(a:int, b:int)
 
     }
 
-
-//TODO Why doesn't it need lemma
 method peasantMult(a: int, b: int) returns (r: int)
     requires b > 0
     ensures r == a * b
@@ -34,8 +33,9 @@ method peasantMult(a: int, b: int) returns (r: int)
             decreases bb 
             invariant 0 <= bb <= b
             invariant r + aa * bb == a * b
-        {
-            peasantMultLemma(aa, bb);
+        { 
+            // Use of lemma was not necessary for a successful verification
+            // peasantMultLemma(aa, bb);
             if (bb % 2 == 0)
             {
                 aa := 2 * aa;
@@ -50,6 +50,8 @@ method peasantMult(a: int, b: int) returns (r: int)
         } 
     }
 
+
+//Second Exercise
 method euclidianDiv(a: int,b : int) returns (q: int,r: int)
     requires a >= 0
     requires b > 0
