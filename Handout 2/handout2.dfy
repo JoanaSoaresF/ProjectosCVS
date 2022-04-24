@@ -13,6 +13,8 @@ class IntervalTree {
     /*The number of leaves in the tree (i.e. the number of elements in the sequence). */ 
     ghost var leaves: int
 
+    ghost var s : seq<int> // for task tree
+
     /*Initializes an interval tree for a sequence of n elements whose values are 0. */ 
     constructor(n: int) 
     //TODO especificação
@@ -23,21 +25,67 @@ class IntervalTree {
     //Updates the i-th sequence element (0-based) by v 
     method update(i: int,v: int) 
     //TODO especificação
-    requires 0 <= i < leaves {
-        //TODO
+    requires 0 <= i < leaves
+    //ATTENTION - rever 
+    requires Valid()
+    modifies `tree
+    ensures forall k:: 0<= k < tree.Length/2 ==> tree[k] == tree[2*k+1] + tree[2*k+2]
+    ensures Valid()
+   {
+        var pos := tree.Length/2 + i;
+        tree[pos] := tree[pos] + v;
+        while(pos != 0) {
+            pos := (pos-1)/2;
+            tree[pos] := tree[pos] + v;
+        }    
     }
 
     //Ranged sum over interval [a,b[ 
     method query(a: int,b: int) returns (r: int) 
     //TODO especificação
     requires 0 <= a <= b <= leaves 
-    ensures r == rsum(a,b) {
-        //TODO
+    ensures r == rsum(a,b) 
+    //ATTENTION - rever
+    requires Valid()
+    ensures Valid()
+    {
+    
+        var ra := tree.Length/2 + a;
+        var rb := tree.Length/2 + b;
+        r := 0;
+        while(ra < rb)
+        //TODO invariantes
+        invariant 0 <= ra <= tree.Length/2 + a;
+        invariant 0 <= rb <= tree.Length/2 + b;
+        invariant r == sumArr(ra, rb);
+        decreases ra, rb;
+        
+        {
+            //If ra is rigth child we add the array value
+            if(ra % 2 == 0) {
+                r := r + tree[ra];
+            }
+            //move up to ra parent
+            ra := ra/2;
+
+            // if rb is a right-child, since the interval is open on its upper-bound, we must include the value at position rb-1 in our sum because its node must be a leftchild.
+            if(rb % 2 == 0) {
+                r := r + tree[rb-1];
+            }
+
+            //move up to rb parent
+            rb := (rb-1)/2;
+
+        }
     }
 
     predicate Valid() {
         //TODO
         true
+        //Task tree
+        // && |s| = leaves 
+        // && tree[0] = sum(s)
+        // && forall i:: 0 <= i < leaves ==> s[i] == get(i)
     }
 
     //Sum of elements over range [a,b[ 
@@ -45,23 +93,23 @@ class IntervalTree {
     requires Valid() 
     decreases b-a 
     requires 0 <= a <= leaves && 0 <= b <= leaves 
-    reads //TODO reads 
+    reads `tree //ATTENTION rever reads
     {
         if b <= a then 0 else get(b-1) + rsum(a, b-1) 
     }
 
 
     predicate ValidSize() 
-    reads //TODO reads
+    reads `tree, `leaves //ATTENTION rever reads
     {
-    tree.Length == 2*leaves-1 
+        tree.Length == 2*leaves-1 
     }
 
 
     /*ith element of the sequence, through the array-based representation*/ 
     function get(i: int) : int 
     requires 0 <= i < leaves && ValidSize() 
-    reads // TODO reads
+    reads tree, `leaves //ATTENTION rever reads
     {
         tree[i+leaves-1]
     }
@@ -70,7 +118,7 @@ class IntervalTree {
     function sumArr(a: int,b: int) : int 
     requires Valid() 
     requires 0 <= a <= tree.Length && 0 <= b <= tree.Length 
-    reads //TODO reads
+    reads tree, `tree //ATTENTION rever reads
     {
         if b <= a then 0 else tree[b-1] + sumArr(a,b-1) 
     }
@@ -81,15 +129,14 @@ class IntervalTree {
     requires forall i:: a <= i < b ==> get(i) == tree[i+c] 
     // requires ∀ i • a ≤ i < b =⇒ get(i) = tree[i+c] 
     ensures rsum(a,b) == sumArr(a + c, b + c) 
-    decreases b-a {
-        //TODO
-     }
+    decreases b-a
+    // TODO lemma shift
+
 
     lemma crucial(ra: int,rb: int) 
     requires 0 <= ra <= rb && 2*rb < tree.Length && Valid() 
-    ensures sumArr(ra,rb) == sumArr(2*ra+1,2*rb+1){
-        //TODO
-    }
+    ensures sumArr(ra,rb) == sumArr(2*ra+1,2*rb+1)
+    //TODO lemma crucial
 
 
     lemma sumArrSwap(ra: int,rb: int) 
@@ -112,9 +159,9 @@ class IntervalTree {
         //TODO
     }
 
+
     function sum(s: seq<int>) :int {
-        //TODO
-        0
+       if |s| == 0 then 0 else s[0]+sum(s[1..])
     }
 
 }
