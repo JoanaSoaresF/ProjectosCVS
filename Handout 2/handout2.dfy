@@ -17,24 +17,44 @@ class IntervalTree {
 
     /*Initializes an interval tree for a sequence of n elements whose values are 0. */ 
     constructor(n: int) 
-    //TODO especificação
     requires n > 0 
-    ensures leaves == n {
-        //TODO
+    ensures leaves == n
+    ensures Valid()
+    ensures forall i :: 0 <= i < n ==> get(i) == 0
+    {
+        tree := new int[2 * n - 1] ( i => 0); 
+        leaves := n;
     }
+
+    function sumChildren(i : int, t : array<int>) : int
+        requires 0 <= i < t.Length/2 - 1
+        reads t
+    {
+        t[2*i+1] + t[2*i+2]
+    }
+
     //Updates the i-th sequence element (0-based) by v 
     method update(i: int,v: int) 
     //TODO especificação
     requires 0 <= i < leaves
-    //ATTENTION - rever 
     requires Valid()
-    modifies `tree
-    ensures forall k:: 0<= k < tree.Length/2 ==> tree[k] == tree[2*k+1] + tree[2*k+2]
+    modifies `tree, tree
     ensures Valid()
-   {
+    ensures forall j:: 0 <= j < leaves ==> if (j != i) then get(j) == old(get(j)) else get(j) == old(get(j)) + v
+    // ensures forall k:: 0<= k < tree.Length/2 ==> tree[k] == tree[2*k+1] + tree[2*k+2]
+    {
         var pos := tree.Length/2 + i;
         tree[pos] := tree[pos] + v;
-        while(pos != 0) {
+        while(pos != 0) 
+            invariant 0 <= pos <= tree.Length/2 + i
+            //invariant forall k:: 0<= k < tree.Length/2 - 1 ==> 
+            //    if (k>=pos) then tree[k] == old(tree[2*k+1]) + old(tree[2*k+2]) + v
+            //    else tree[k] == old(tree[2*k+1]) + old(tree[2*k+2])
+            //invariant forall k:: 0<= k < pos ==> tree[k] == old(tree[2*k+1]) + old(tree[2*k+2])
+            invariant forall k:: 0 <= k < tree.Length/2 - 1 ==> if k == pos*2+1 || k == pos*2+2
+                                                        then sumChildren(k, tree) - v == tree[k]
+                                                        else tree[k] == sumChildren(k, tree) 
+        {
             pos := (pos-1)/2;
             tree[pos] := tree[pos] + v;
         }    
@@ -79,9 +99,14 @@ class IntervalTree {
         }
     }
 
-    predicate Valid() {
+    predicate Valid() 
+    reads `tree, `leaves, tree
+    {
         //TODO
-        true
+        ValidSize() 
+        && 
+        forall i :: 0 <= i < leaves-1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
+        
         //Task tree
         // && |s| = leaves 
         // && tree[0] = sum(s)
@@ -93,7 +118,7 @@ class IntervalTree {
     requires Valid() 
     decreases b-a 
     requires 0 <= a <= leaves && 0 <= b <= leaves 
-    reads `tree //ATTENTION rever reads
+    reads `tree,`leaves, tree //ATTENTION rever reads
     {
         if b <= a then 0 else get(b-1) + rsum(a, b-1) 
     }
@@ -109,7 +134,7 @@ class IntervalTree {
     /*ith element of the sequence, through the array-based representation*/ 
     function get(i: int) : int 
     requires 0 <= i < leaves && ValidSize() 
-    reads tree, `leaves //ATTENTION rever reads
+    reads tree, `leaves, `tree //ATTENTION rever reads
     {
         tree[i+leaves-1]
     }
