@@ -15,6 +15,25 @@ class IntervalTree {
 
     ghost var s : seq<int> // for task tree
 
+    predicate ValidSize() 
+        reads `tree, `leaves
+    {
+        tree.Length == 2*leaves-1 
+    }
+
+    predicate Valid() 
+        reads `tree, `leaves, tree
+    {
+        ValidSize() 
+        && 
+        forall i :: 0 <= i < leaves - 1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
+        
+        //Task tree
+        // && |s| = leaves 
+        // && tree[0] = sum(s)
+        // && forall i:: 0 <= i < leaves ==> s[i] == get(i)
+    }
+
     /*Initializes an interval tree for a sequence of n elements whose values are 0. */ 
     constructor(n: int) 
         requires n > 0 
@@ -39,7 +58,7 @@ class IntervalTree {
         var pos := tree.Length/2 + i; 
         tree[pos] := tree[pos] + v;
         
-        assert pos == i + leaves - 1;
+        // assert pos == i + leaves - 1;
         
         while(pos > 0) 
             decreases pos 
@@ -59,24 +78,23 @@ class IntervalTree {
 
     //Ranged sum over interval [a,b[ 
     method query(a: int,b: int) returns (r: int) 
-    //TODO especificação
-    requires 0 <= a <= b <= leaves
-    requires Valid()
-    ensures r == rsum(a,b) 
-    //ATTENTION - rever
-    ensures Valid()
+        //TODO especificação
+        requires 0 <= a <= b <= leaves
+        requires Valid()
+        ensures r == rsum(a,b) 
+        //ATTENTION - rever
+        ensures Valid()
     {
     
         var ra := tree.Length/2 + a;
         var rb := tree.Length/2 + b;
         r := 0;
         while(ra < rb)
-        //TODO invariantes
-        invariant 0 <= ra <= tree.Length/2 + a;
-        invariant 0 <= rb <= tree.Length/2 + b;
-        invariant r == sumArr(ra, rb);
-        decreases ra, rb;
-        
+            //TODO invariantes
+            invariant 0 <= ra <= tree.Length/2 + a;
+            invariant 0 <= rb <= tree.Length/2 + b;
+            invariant r == sumArr(ra, rb);
+            decreases ra, rb;
         {
             //If ra is rigth child we add the array value
             if(ra % 2 == 0) {
@@ -95,95 +113,76 @@ class IntervalTree {
 
         }
     }
-
-    predicate Valid() 
-    reads `tree, `leaves, tree
-    {
-        //TODO
-        ValidSize() 
-        && 
-        forall i :: 0 <= i < leaves - 1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
-        
-        //Task tree
-        // && |s| = leaves 
-        // && tree[0] = sum(s)
-        // && forall i:: 0 <= i < leaves ==> s[i] == get(i)
-    }
-
-    //Sum of elements over range [a,b[ 
-    function rsum(a: int,b: int) : int 
-    requires Valid() 
-    decreases b-a 
-    requires 0 <= a <= leaves && 0 <= b <= leaves 
-    reads `tree,`leaves, tree //ATTENTION rever reads
-    {
-        if b <= a then 0 else get(b-1) + rsum(a, b-1) 
-    }
-
-
-    predicate ValidSize() 
-    reads `tree, `leaves //ATTENTION rever reads
-    {
-        tree.Length == 2*leaves-1 
-    }
-
-
+    
     /*ith element of the sequence, through the array-based representation*/ 
     function get(i: int) : int 
-    requires 0 <= i < leaves && ValidSize() 
-    reads tree //ATTENTION rever reads
+        requires 0 <= i < leaves && ValidSize() 
+        reads tree, `leaves, `tree
     {
         tree[i+leaves-1]
     }
 
+    //Sum of elements over range [a,b[ 
+    function rsum(a: int,b: int) : int 
+        requires Valid() 
+        decreases b-a 
+        requires 0 <= a <= leaves && 0 <= b <= leaves 
+        reads `tree,`leaves, tree
+    {
+        if b <= a then 0 else get(b-1) + rsum(a, b-1) 
+    }
 
     function sumArr(a: int,b: int) : int 
-    requires Valid() 
-    requires 0 <= a <= tree.Length && 0 <= b <= tree.Length 
-    reads tree, `tree //ATTENTION rever reads
+        requires Valid() 
+        requires 0 <= a <= tree.Length && 0 <= b <= tree.Length 
+        reads `tree, `leaves, tree
     {
         if b <= a then 0 else tree[b-1] + sumArr(a,b-1) 
     }
 
     lemma shift(a: int,b: int,c: int) 
-    requires Valid() && 0 <= c <= leaves-1 
-    requires 0 <= a <= leaves && 0 <= b <= leaves 
-    requires forall i:: a <= i < b ==> get(i) == tree[i+c] 
-    // requires ∀ i • a ≤ i < b =⇒ get(i) = tree[i+c] 
-    ensures rsum(a,b) == sumArr(a + c, b + c) 
-    decreases b-a
+        requires Valid() && 0 <= c <= leaves-1 
+        requires 0 <= a <= leaves && 0 <= b <= leaves 
+        requires forall i:: a <= i < b ==> get(i) == tree[i+c] 
+        // requires ∀ i • a ≤ i < b =⇒ get(i) = tree[i+c] 
+        ensures rsum(a,b) == sumArr(a + c, b + c) 
+        decreases b-a
     // TODO lemma shift
 
 
     lemma crucial(ra: int,rb: int) 
-    requires 0 <= ra <= rb && 2*rb < tree.Length && Valid() 
-    ensures sumArr(ra,rb) == sumArr(2*ra+1,2*rb+1)
+        requires 0 <= ra <= rb && 2*rb < tree.Length && Valid() 
+        ensures sumArr(ra,rb) == sumArr(2*ra+1,2*rb+1)
     //TODO lemma crucial
 
 
     lemma sumArrSwap(ra: int,rb: int) 
-    requires Valid() 
-    requires 0 <= ra < rb && 0 <= rb <= tree.Length 
-    ensures sumArr(ra,rb) == tree[ra]+sumArr(ra+1,rb){
-        //TODO
+        requires Valid() 
+        requires 0 <= ra < rb && 0 <= rb <= tree.Length 
+        ensures sumArr(ra,rb) == tree[ra]+sumArr(ra+1,rb)
+    {
+        //TODO sumArrSwap
     }
 
-    lemma sum_zero(s: seq<int>) 
-    requires forall i:: 0 <= i < |s| ==> s[i] == 0 
-    ensures sum(s) == 0{
-        //TODO
-    }
-
-
-    lemma sum_elem(s: seq<int>,x: int,p: int) 
-    requires 0 <= p < |s| 
-    ensures x+sum(s) == sum(s[p := s[p]+x]){
-        //TODO
-    }
-
+ 
 
     function sum(s: seq<int>) :int {
        if |s| == 0 then 0 else s[0]+sum(s[1..])
     }
+
+
+// TASK 3
+//    lemma sum_zero(s: seq<int>) 
+//     requires forall i:: 0 <= i < |s| ==> s[i] == 0 
+//     ensures sum(s) == 0{
+//         //TODO task 3
+//     }
+
+
+//     lemma sum_elem(s: seq<int>,x: int,p: int) 
+//     requires 0 <= p < |s| 
+//     ensures x+sum(s) == sum(s[p := s[p]+x]){
+//         //TODO task 3
+//     }
 
 }
