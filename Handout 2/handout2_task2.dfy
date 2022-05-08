@@ -18,13 +18,14 @@ class IntervalTree {
     predicate ValidSize() 
         reads this, `tree
     {
-        tree.Length == 2*leaves-1 
+        this in Repr && tree in Repr && tree.Length == 2*leaves-1 
     }
 
     predicate Valid() 
         reads this, tree
     {
-        tree in Repr && this in Repr
+        this in Repr 
+        && tree in Repr 
         &&
         ValidSize() 
         && 
@@ -49,7 +50,13 @@ class IntervalTree {
         tree := new int[2 * n - 1] ( i => 0); 
         leaves := n;
         Repr := {this};
-        Repr := Repr + {tree};
+        Repr := Repr + {this, tree};
+    }
+
+    function treeSize() : int 
+        reads this
+    {
+        tree.Length
     }
 
     //Updates the i-th sequence element (0-based) by v 
@@ -59,6 +66,7 @@ class IntervalTree {
         requires Valid()
         ensures Valid() 
         ensures fresh(Repr - old(Repr)) 
+        ensures treeSize() == old(treeSize())
         ensures forall j:: (0 <= j < leaves ) ==> if (j != i) 
                                             then get(j) == old(get(j)) 
                                             else get(j) == old(get(j)) + v
@@ -70,7 +78,7 @@ class IntervalTree {
         
         while(pos > 0)
             decreases pos 
-            invariant old(tree) == tree
+            invariant old(tree) == tree && ValidSize() && fresh(Repr - old(Repr))
             invariant 0 <= pos <= tree.Length/2 + i
             invariant forall j:: 0 <= j < leaves ==> if (j != i) 
                                         then get(j) == old(get(j)) 
@@ -81,8 +89,10 @@ class IntervalTree {
             //invariant forall k:: 0 <= k <  tree.Length / 2 ==> tree[k] == tree[2*k+1] + tree[2*k+2] - if (k == (pos - 1) / 2) then v else 0 
         {
             pos := (pos-1)/2;  
-            tree[pos] := tree[pos] + v; 
-        }    
+            tree[pos] := tree[pos] + v;
+        }
+        
+        
     }
 
     //Ranged sum over interval [a,b[ 
@@ -131,7 +141,7 @@ class IntervalTree {
     function get(i: int) : int 
         requires 0 <= i < leaves 
         requires ValidSize()
-        reads `leaves, tree, this
+        reads this, Repr
     {
         tree[i+leaves-1]
     }
