@@ -1,5 +1,5 @@
 /**
-CVS 2021-22 Handout 2 - Task 1
+CVS 2021-22 Handout 2 - Task 2
 Authors
 Gonçalo Martins Lourenço nº55780
 Joana Soares Faria  nº55754
@@ -24,18 +24,10 @@ class IntervalTree {
     predicate Valid() 
         reads this, tree
     {
-        this in Repr 
-        && tree in Repr 
-        &&
         ValidSize() 
         && 
         forall i :: 0 <= i < leaves - 1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
         
-        
-        //Task tree
-        // && |s| = leaves 
-        // && tree[0] = sum(s)
-        // && forall i:: 0 <= i < leaves ==> s[i] == get(i)
     }
 
     /*Initializes an interval tree for a sequence of n elements whose values are 0. */ 

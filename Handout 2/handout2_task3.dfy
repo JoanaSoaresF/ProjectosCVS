@@ -1,5 +1,5 @@
 /**
-CVS 2021-22 Handout 2 - Task 1
+CVS 2021-22 Handout 2 - Task 3
 Authors
 Gonçalo Martins Lourenço nº55780
 Joana Soares Faria  nº55754
