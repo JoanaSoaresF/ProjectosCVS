@@ -13,8 +13,6 @@ class IntervalTree {
     /*The number of leaves in the tree (i.e. the number of elements in the sequence). */ 
     ghost var leaves: int
 
-    ghost var s : seq<int> // for task tree
-
     predicate ValidSize() 
         reads `tree, `leaves
     {
@@ -27,11 +25,7 @@ class IntervalTree {
         ValidSize() 
         && 
         forall i :: 0 <= i < leaves - 1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
-        
-        //Task tree
-        // && |s| = leaves 
-        // && tree[0] = sum(s)
-        // && forall i:: 0 <= i < leaves ==> s[i] == get(i)
+    
     }
 
     /*Initializes an interval tree for a sequence of n elements whose values are 0. */ 
@@ -40,8 +34,9 @@ class IntervalTree {
         ensures leaves == n 
         ensures Valid()
         ensures forall i :: 0 <= i < n ==> get(i) == 0
+        ensures fresh(tree)
     {
-        tree := new int[2 * n - 1] ( i => 0); 
+        tree := new int[2 * n - 1] (i => 0); 
         leaves := n;
     }
 
@@ -53,7 +48,7 @@ class IntervalTree {
         ensures forall j:: 0 <= j < leaves ==> if (j != i) 
                                             then get(j) == old(get(j)) 
                                             else get(j) == old(get(j)) + v
-        ensures Valid()
+        ensures Valid() 
     {
         var pos := tree.Length/2 + i; 
         tree[pos] := tree[pos] + v;
@@ -73,29 +68,33 @@ class IntervalTree {
         {
             pos := (pos-1)/2;  
             tree[pos] := tree[pos] + v; 
-        }    
+        }
+
     }
 
+
     //Ranged sum over interval [a,b[ 
-    method query(a: int,b: int) returns (r: int) 
-        //TODO especificação
+    method query(a: int, b: int) returns (r: int) 
         requires 0 <= a <= b <= leaves
         requires Valid()
         ensures r == rsum(a,b) 
-        //ATTENTION - rever
         ensures Valid()
     {
     
         var ra := tree.Length/2 + a;
         var rb := tree.Length/2 + b;
         r := 0;
+        
+        shift(a, b, leaves-1);
+       
         while(ra < rb)
-            //TODO invariantes
             invariant 0 <= ra <= tree.Length/2 + a;
             invariant 0 <= rb <= tree.Length/2 + b;
-            invariant r == sumArr(ra, rb);
+            invariant r + sumArr(ra,rb) == rsum(a,b)
             decreases ra, rb;
         {
+            sumArrSwap(ra,rb);
+        
             //If ra is rigth child we add the array value
             if(ra % 2 == 0) {
                 r := r + tree[ra];
@@ -110,6 +109,8 @@ class IntervalTree {
 
             //move up to rb parent
             rb := (rb-1)/2;
+
+            crucial(ra, rb);
 
         }
     }
@@ -147,42 +148,41 @@ class IntervalTree {
         // requires ∀ i • a ≤ i < b =⇒ get(i) = tree[i+c] 
         ensures rsum(a,b) == sumArr(a + c, b + c) 
         decreases b-a
-    // TODO lemma shift
-
+    {
+        if(b > a) {
+            shift(a,b-1, c);
+        }
+    }
 
     lemma crucial(ra: int,rb: int) 
         requires 0 <= ra <= rb && 2*rb < tree.Length && Valid() 
         ensures sumArr(ra,rb) == sumArr(2*ra+1,2*rb+1)
-    //TODO lemma crucial
+    {
+        if(ra < rb){
+            crucial(ra, rb-1);
+        }
 
+    }
 
     lemma sumArrSwap(ra: int,rb: int) 
         requires Valid() 
         requires 0 <= ra < rb && 0 <= rb <= tree.Length 
         ensures sumArr(ra,rb) == tree[ra]+sumArr(ra+1,rb)
     {
-        //TODO sumArrSwap
+         if(ra < rb-1){
+            sumArrSwap(ra, rb-1);
+        }
     }
-
- 
-
-    function sum(s: seq<int>) :int {
-       if |s| == 0 then 0 else s[0]+sum(s[1..])
-    }
-
-
-// TASK 3
-//    lemma sum_zero(s: seq<int>) 
-//     requires forall i:: 0 <= i < |s| ==> s[i] == 0 
-//     ensures sum(s) == 0{
-//         //TODO task 3
-//     }
-
-
-//     lemma sum_elem(s: seq<int>,x: int,p: int) 
-//     requires 0 <= p < |s| 
-//     ensures x+sum(s) == sum(s[p := s[p]+x]){
-//         //TODO task 3
-//     }
 
 }
+
+// method Main(){
+//     var t := new IntervalTree(10);
+//     var r := t.query(1, 3);
+//     t.update(1, 1);
+//     t.update(2, 1);
+//     var y := t.query(2, 3);
+//     // t.update(0, 1);
+
+
+// }
