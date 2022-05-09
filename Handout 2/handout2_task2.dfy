@@ -66,8 +66,6 @@ class IntervalTree {
         var pos := tree.Length/2 + i; 
         tree[pos] := tree[pos] + v;
         
-        // assert pos == i + leaves - 1;
-        
         while(pos > 0)
             decreases pos 
             invariant old(tree) == tree && ValidSize() && fresh(Repr - old(Repr))
@@ -78,7 +76,6 @@ class IntervalTree {
             invariant forall k:: 0 <= k <  tree.Length / 2 ==> if k == (pos - 1) / 2
                                                     then tree[k] == tree[2*k+1] + tree[2*k+2] - v 
                                                     else tree[k] == tree[2*k+1] + tree[2*k+2]
-            //invariant forall k:: 0 <= k <  tree.Length / 2 ==> tree[k] == tree[2*k+1] + tree[2*k+2] - if (k == (pos - 1) / 2) then v else 0 
         {
             pos := (pos-1)/2;  
             tree[pos] := tree[pos] + v;

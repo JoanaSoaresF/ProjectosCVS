@@ -175,14 +175,3 @@ class IntervalTree {
     }
 
 }
-
-// method Main(){
-//     var t := new IntervalTree(10);
-//     var r := t.query(1, 3);
-//     t.update(1, 1);
-//     t.update(2, 1);
-//     var y := t.query(2, 3);
-//     // t.update(0, 1);
-
-
-// }
