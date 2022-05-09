@@ -26,7 +26,7 @@ class IntervalTree {
     {
         ValidSize() 
         && 
-        forall i :: 0 <= i < leaves - 1 ==> tree[i] == tree[2*i+1] + tree[2*i+2]
+        (forall i :: 0 <= i < leaves - 1 ==> (tree[i] == tree[2*i+1] + tree[2*i+2]))
         && |s| == leaves 
         && tree[0] == sum(s)
         && forall i:: 0 <= i < leaves ==> s[i] == get(i)
@@ -37,31 +37,30 @@ class IntervalTree {
         requires n > 0 
         ensures leaves == n 
         ensures Valid()
-        ensures forall i :: 0 <= i < n ==> get(i) == 0
+        ensures forall i :: 0 <= i < leaves ==> get(i) == 0
         ensures fresh(tree)
     {
         tree := new int[2 * n - 1] (i => 0); 
         leaves := n;
 
-        var i := 0;
-        s := s + [0];
-
-        while(i < n) 
-            decreases n-i
-            // invariant forall j :: 0 <= j < i ==> s[j] == get(j)
-        {
-            i:=i+1;
-            s := s + [0];
-            
-        }
+        new;
+        s := seq(leaves, i => 0);
+        sum_zero(s);
+    }
+    
+    function treeSize() : int 
+        reads this
+    {
+        tree.Length
     }
 
     //Updates the i-th sequence element (0-based) by v 
     method update(i: int,v: int) 
-        modifies tree
-        requires 0 <= i < leaves
+        modifies tree, this
+        requires 0 <= i < leaves == |s|
         requires Valid()
-        ensures forall j:: 0 <= j < leaves ==> if (j != i) 
+        ensures treeSize() == old(treeSize()) && old(tree) == tree
+        ensures forall j:: 0 <= j < leaves && ValidSize() ==> if (j != i) 
                                             then get(j) == old(get(j)) 
                                             else get(j) == old(get(j)) + v
         ensures Valid() 
@@ -69,10 +68,13 @@ class IntervalTree {
         var pos := tree.Length/2 + i; 
         tree[pos] := tree[pos] + v;
         
-        // assert pos == i + leaves - 1;
+        sum_elem(s,v,i);
+        
+        s := s[i := s[i] + v];
         
         while(pos > 0) 
             decreases pos 
+            invariant ValidSize() && old(tree) == tree //&& treeSize() == old(treeSize())
             invariant 0 <= pos <= tree.Length/2 + i
             invariant forall j:: 0 <= j < leaves ==> if (j != i) 
                                         then get(j) == old(get(j)) 
@@ -80,10 +82,14 @@ class IntervalTree {
             invariant forall k:: 0 <= k <  tree.Length / 2 ==> if k == (pos - 1) / 2
                                                     then tree[k] == tree[2*k+1] + tree[2*k+2] - v 
                                                     else tree[k] == tree[2*k+1] + tree[2*k+2]
-            //invariant forall k:: 0 <= k <  tree.Length / 2 ==> tree[k] == tree[2*k+1] + tree[2*k+2] - if (k == (pos - 1) / 2) then v else 0 
+            invariant |s| == leaves 
+            invariant forall i:: 0 <= i < leaves ==> s[i] == get(i)
+            invariant old(sum(s)) == sum(s) - v
+            invariant if (pos > 0) then tree[0] == old(tree[0]) else tree[0] == old(tree[0]) + v
+
         {
             pos := (pos-1)/2;  
-            tree[pos] := tree[pos] + v; 
+            tree[pos] := tree[pos] + v;   
         }
 
     }
@@ -184,40 +190,44 @@ class IntervalTree {
         requires 0 <= ra < rb && 0 <= rb <= tree.Length 
         ensures sumArr(ra,rb) == tree[ra]+sumArr(ra+1,rb)
     {
-         if(ra < rb-1){
+        if(ra < rb-1){
             sumArrSwap(ra, rb-1);
         }
     }
 
 
-    function sum(s: seq<int>) :int {
+    function method sum(s: seq<int>) :int {
        if |s| == 0 then 0 else s[0]+sum(s[1..])
     }
 
 
 // TASK 3
    lemma sum_zero(s: seq<int>) 
-    requires forall i:: 0 <= i < |s| ==> s[i] == 0 
-    ensures sum(s) == 0{
+        requires forall i:: 0 <= i < |s| ==> s[i] == 0 
+        ensures sum(s) == 0
+    {
        
     }
 
 
     lemma sum_elem(s: seq<int>,x: int,p: int) 
-    requires 0 <= p < |s| 
-    ensures x+sum(s) == sum(s[p := s[p]+x]){
-       
+        requires 0 <= p < |s| 
+        ensures x+sum(s) == sum(s[p := s[p]+x])
+        decreases |s|
+    {
+        if (p > 0) {
+           sum_elem(s[1..], x, p-1);
+        }
     }
 
 }
 
-// method Main(){
-//     var t := new IntervalTree(10);
-//     var r := t.query(1, 3);
-//     t.update(1, 1);
-//     t.update(2, 1);
-//     var y := t.query(2, 3);
-//     // t.update(0, 1);
+method Main(){
+    var t := new IntervalTree(10);
+    var r := t.query(1, 3);
+    t.update(1, 1);
+    t.update(2, 1);
+    var y := t.query(2, 3);
+    t.update(0, 1);
+}
 
-
-// }

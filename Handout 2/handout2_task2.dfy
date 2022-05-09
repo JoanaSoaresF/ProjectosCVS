@@ -22,7 +22,7 @@ class IntervalTree {
     }
 
     predicate Valid() 
-        reads this, tree
+        reads this, Repr
     {
         ValidSize() 
         && 
@@ -35,14 +35,14 @@ class IntervalTree {
         requires n > 0 
         ensures leaves == n 
         ensures Valid()
-        ensures forall i :: 0 <= i < n ==> get(i) == 0
+        ensures forall i :: 0 <= i < leaves ==> get(i) == 0
         ensures fresh(Repr - {this})
     {
         // Repr := {this};
         tree := new int[2 * n - 1] ( i => 0); 
         leaves := n;
         Repr := {this};
-        Repr := Repr + {this, tree};
+        Repr := Repr + {tree};
     }
 
     function treeSize() : int 
