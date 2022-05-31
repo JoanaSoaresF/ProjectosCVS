@@ -21,6 +21,17 @@
                                                        
                                                         ;
  @*/
+
+ /*@ fixpoint boolean orderPreserved(list<int> oldList, list<int> newList, int i, int pos)
+{
+    switch (i) {
+        case pos<= i: return true;
+        case pos<= i: return nth(pos, newList) == nth(pos + 1, oldList) 
+                && orderPreserved(oldList, newList, i, pos - 1);  
+
+    }
+}
+ @*/
 public class CounterSequence {
 
     private Counter[] sequence;
@@ -38,25 +49,26 @@ public class CounterSequence {
     }
    
     public CounterSequence(int[] arr) 
-        //@ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) ;
-        //@ ensures CounterSequenceInv(this, _ , arr.length, arr.length) &*& array_slice(arr, 0, arr.length, _);
+        // @ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) ;
+        // @ ensures CounterSequenceInv(this, _ , ?n, ?c) &*& array_slice(arr, 0, arr.length, _) &*& n == arr.length &*& c==arr.length;
     {
-        //TODO
         sequence = new Counter[arr.length];
         capacity  = arr.length;
         nCounters = 0;
         for(int i = 0; i < arr.length; i++)
             // invariant CounterSequenceInv(this, ?s , arr.length, i);
-            /*@ invariant CounterSequenceInv(this, ?s , arr.length, i) &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) &*& i >= 0 &*& i < arr.length;
-            @*/
+            /*@ invariant i>=0 &*& i<= arr.length &*& i<= sequence.length 
+            &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) 
+            &*& array_slice_deep(sequence, 0, i, CounterP, unit, _, _) 
+            &*& array_slice(sequence, i, sequence.length, ?elems) &*& all_eq(elems, null) == true
+            ;@*/
         {
             Counter c = new Counter(0, arr[i]);
             sequence[i] = c;
-            //FIXME No matching heap chunks: java.lang.array_element<class Counter>(s, i, _)
-
-            // @ array_slice_deep_close(sequence, i, CounterP, unit);
-           
+            nCounters++;
+        
         }
+
     }
 
     public int length() 
@@ -76,34 +88,39 @@ public class CounterSequence {
     // &*& result == s[i].val
     // &*& array_slice(s, 0, c ,?vs) &*& result == nth(i, vs).val
     public int getCounter(int i) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n  &*& array_slice(s, 0, c ,?vs);
-        /*@ ensures CounterSequenceInv(this, s , c, n) &*& result == nth(i, vs).val;@*/
+        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n  &*& s[i] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _);
+        /*@ ensures CounterSequenceInv(this, s , c, n) &*& result == v % l;@*/
     { 
-        //TODO
-        //FIXME Target of method call might be null.
-
-        return sequence[i].getVal();
+        //ATTENTION pré condições? 
+        int result = sequence[i].getVal();
+    
+        return result;
     }
+    
 
     public int addCounter(int limit) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& limit > 0 &*& n < c;
-        /*@ ensures CounterSequenceInv(this, s , c, n + 1) 
+        //@ requires this.sequence |-> ?seq &*& seq != null &*& CounterSequenceInv(this, seq , ?c, ?n) &*& limit > 0 &*& n < c;
+        /*@ ensures CounterSequenceInv(this, seq , c, n + 1) 
                                 &*& result == n 
-                                &*& s[n].val == 0
-                                &*& s[n].limit == limit;@*/
+                                &*& seq[n].val == 0
+                                &*& seq[n].limit == limit
+                                &*& seq[n].overflow == false;@*/
     {
-        //TODO
-        Counter c = new Counter(0, limit);
-        sequence[nCounters++] = c;
+        //ATTENTION pré condições?  Será que faz overlap? this.sequence |-> ?seq
+        Counter counter = new Counter(0, limit);
+        sequence[nCounters++] = counter;
+    
 
         return nCounters - 1;
     }
 
     public void remCounter(int pos)
-        // @ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& pos >= 0 &*& pos < n;
-        // @ ensures CounterSequenceInv(this, s , c, n - 1);
+        //@ requires this.sequence |-> ?s &*& s != null &*& CounterSequenceInv(this, s , ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n &*& s[n-1] |-> ?nc &*& s[pos] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _) ;
+        /*@ ensures CounterSequenceInv(this, s , c, n - 1) &*& s!=null 
+        &*& (pos == n - 1) ? s[pos] == null : s[pos] == nc
+        ;@*/
     {
-        // TODO
+        //ATTENTION pré condições?  Será que faz overlap? this.sequence |-> ?seq
         sequence[pos] = sequence[--nCounters];
         sequence[nCounters] = null;
     }
@@ -120,18 +137,16 @@ public class CounterSequence {
     }
 
     public void increment(int i, int val) 
-        // @ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n;
-        // @ ensures CounterSequenceInv(this, s , c, n);
+        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0 &*& s[i] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _);
+        //@ ensures CounterSequenceInv(this, s , c, n) &*&  counter.val |-> ?newVal &*& newVal == v + val;
     {
-        // TODO
         sequence[i].incr(val);
     }
 
     public void decrement(int i, int val) 
-        // @ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n;
-        // @ ensures CounterSequenceInv(this, s , c, n);
+        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0 &*& s[i] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _);
+        //@ ensures CounterSequenceInv(this, s , c, n) &*& counter.val |-> ?newVal &*& (v - val > 0 ) ?  newVal == v - val : newVal == 0;
     {
-        // TODO
         sequence[i].decr(val);
     }
 }
