@@ -14,10 +14,11 @@
                                                         &*& cs.capacity |-> c
                                                         &*& cs.nCounters |-> n
                                                         &*& n <= c
+                                                        &*& s.length == c &*& c > 0
                                                         &*& s != null
                                                         &*& n >= 0 &*& n <= s.length
                                                         &*& array_slice_deep(s,0,n,CounterP, unit, _, _) 
-                                                        &*& array_slice(s,n,s.length,?others) &*& all_eq(others, null) == true
+                                                        &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
                                                        
                                                         ;
  @*/
@@ -49,23 +50,27 @@ public class CounterSequence {
     }
    
     public CounterSequence(int[] arr) 
-        //@ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) ;
-        //@ ensures CounterSequenceInv(this, _ , ?n, ?c) &*& array_slice(arr, 0, arr.length, _) &*& n == arr.length &*& c==arr.length;
+        // @ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_);
+        // @ ensures CounterSequenceInv(this, this.sequence ,arr.length, arr.length) &*& array_slice(arr, 0, arr.length, _);
     {
-        sequence = new Counter[arr.length];
         capacity  = arr.length;
+        sequence = new Counter[capacity];
+     
         nCounters = 0;
         for(int i = 0; i < arr.length; i++)
-            /*@ invariant this.sequence |-> ?s &*& s != null &*& i>=0 &*& i<= arr.length &*& i<= s.length 
-            &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_) 
-            &*& array_slice_deep(s, 0, i, CounterP, unit, _, _) 
-            &*& array_slice(s, i, s.length, ?elems) &*& all_eq(elems, null) == true
+            /*@ invariant this.sequence |-> ?s &*& s != null &*& i>=0 &*& i<= arr.length
+            &*& i <= s.length
+            &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_)
+            &*& array_slice_deep(s, 0, nC, CounterP, unit, _, _) 
+            &*& array_slice(s, nC, cap, ?elems) &*& all_eq(elems, null) == true
             ;@*/
         {
-            Counter c = new Counter(0, arr[i]);
+           
             //FIXME No matching heap chunks: java.lang.array_element<class Counter>(s, i, _)
+            Counter c = new Counter(0, arr[i]);
             sequence[i] = c;
             nCounters++;
+         
         
         }
 
@@ -85,13 +90,10 @@ public class CounterSequence {
         return capacity;
     }
 
-    // &*& result == s[i].val
-    // &*& array_slice(s, 0, c ,?vs) &*& result == nth(i, vs).val
     public int getCounter(int i) 
         //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n  &*& s[i] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _);
         /*@ ensures CounterSequenceInv(this, s , c, n) &*& result == v % l;@*/
     { 
-        //ATTENTION pré condições? Parece que não passa sempre, se puser &*& n == -5 na pos condição dá mal;
         int result = sequence[i].getVal();
     
         return result;
@@ -101,45 +103,52 @@ public class CounterSequence {
     public int addCounter(int limit) 
         //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& limit > 0 &*& n < c;
         /*@ ensures CounterSequenceInv(this, s , c, n + 1) 
-                                &*& s[n] |-> ?counter &*& CounterP(_, counter, _)
-                                &*& result == n 
-                                &*& counter.val == 0
-                                &*& counter.limit == limit
-                                &*& counter.overflow == false
-                                ;@*/
+        &*& s[n] |-> ?cnt &*& CounterInv(cnt, 0 ,limit , false)
+        ;@*/
     {
         //FIXME No matching heap chunks: java.lang.array_element<class Counter>(s, n, _)
         Counter counter = new Counter(0, limit);
-        sequence[nCounters++] = counter;
+        
+        sequence[nCounters] = counter;
+        //@ array_slice_deep_close(s, n, CounterP, unit);
+        nCounters = nCounters + 1;
         return nCounters - 1;
     }
 
+    //  &*& s[n-1] |-> ?nc &*& s[pos] |-> ?counter;
+    // &*& CounterInv(counter, ?v, ?l, _) 
     public void remCounter(int pos)
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n &*& s[n-1] |-> ?nc &*& s[pos] |-> ?counter &*& counter != null &*& CounterInv(counter, ?v, ?l, _) ;
-        /*@ ensures CounterSequenceInv(this, s , c, n - 1) &*& s[pos] |-> ? counterPos
-        &*& (pos == n - 1) ? counterPos == null : counterPos == nc
-        ;@*/
+        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
+        //@ ensures CounterSequenceInv(this, s , c, n - 1);
+    
     {
-        //FIXME (Cannot prove counter = 0
+        // &*& s[n-1] |-> ? emptySlot
+        // &*& emptySlot == null
+        //ATTENTION acho que a pós condição assim é suficiente, não garantimos nada sobre a ordem
         if(pos == nCounters - 1 ) {
 
             sequence[nCounters - 1] = null;
             nCounters -= 1;
         } else {
-            sequence[pos] = sequence[--nCounters];
-            sequence[nCounters] = null;
+            sequence[pos] = sequence[nCounters - 1];
+            sequence[nCounters - 1] = null;
+            nCounters -= 1;
+            
 
         }
       
     }
 
     public void remCounterPO(int pos) 
-        // @ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& pos >= 0 &*& pos < n;
-        // @ ensures CounterSequenceInv(this, s , c, n - 1);
+        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& pos >= 0 &*& pos < n;
+        //@ ensures CounterSequenceInv(this, s , c, n - 1);
     {
         // TODO
-        for(int i = pos; i < nCounters-1; i++){
-            sequence[i] = sequence[i];
+        for(int i = pos; i < nCounters-1; i++)
+        /*@ invariant CounterSequenceInv(this, s , c, _)
+        ;@*/
+        {
+            sequence[i] = sequence[i+1];
         }
         sequence[--nCounters] = null;
     }
