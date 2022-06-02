@@ -18,7 +18,7 @@
                                                         &*& s != null
                                                         &*& n >= 0 &*& n <= s.length
                                                         &*& array_slice_deep(s,0,n,CounterP, unit, _, _) 
-                                                        &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
+                                                        &*& (n<c) ? array_slice(s,n,c,?others) &*& all_eq(others, null) == true : true
                                                        
                                                         ;
  @*/
@@ -50,30 +50,30 @@ public class CounterSequence {
     }
    
     public CounterSequence(int[] arr) 
-        // @ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_);
-        // @ ensures CounterSequenceInv(this, this.sequence ,arr.length, arr.length) &*& array_slice(arr, 0, arr.length, _);
+        //@ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_);
+        //@ ensures CounterSequenceInv(this, _ ,arr.length, arr.length);
     {
         capacity  = arr.length;
         sequence = new Counter[capacity];
-     
         nCounters = 0;
-        for(int i = 0; i < arr.length; i++)
-            /*@ invariant this.sequence |-> ?s &*& s != null &*& i>=0 &*& i<= arr.length
-            &*& i <= s.length
+
+        while(nCounters < capacity)
+            /*@ invariant this.sequence |-> ?s &*& s != null 
+            &*& this.nCounters |-> ?n &*& n >= 0 &*& n<= arr.length
+            &*& n <= s.length 
+            &*& this.capacity |-> ?cap &*& cap == s.length &*& cap == arr.length
+            &*& n <= cap
             &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_)
-            &*& array_slice_deep(s, 0, nC, CounterP, unit, _, _) 
-            &*& array_slice(s, nC, cap, ?elems) &*& all_eq(elems, null) == true
+            &*& array_slice_deep(s, 0, n, CounterP, unit, _, _) 
+            &*& array_slice(s, n, cap, ?elems) &*& all_eq(elems, null) == true
             ;@*/
         {
-           
-            //FIXME No matching heap chunks: java.lang.array_element<class Counter>(s, i, _)
-            Counter c = new Counter(0, arr[i]);
-            sequence[i] = c;
+            Counter c = new Counter(0, arr[nCounters]);
+            sequence[nCounters] = c;
             nCounters++;
          
-        
         }
-
+   
     }
 
     public int length() 
