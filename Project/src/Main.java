@@ -11,7 +11,7 @@ public class Main {
         CCSeq seq = new CCSeq(30);
         for(int i = 0; i<100;i++){
             new AddCounterThread(seq).run();
-            new 
+            new RemoveCounterThread(seq).run();
         }
         
     }

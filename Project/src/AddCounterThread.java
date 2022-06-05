@@ -17,7 +17,7 @@ class AddCounterThread implements Runnable {
     //@ requires pre(); 
     //@ ensures post();
     {
-        //TODO
+        //TODO add counters and perform increment/decrements to the added counter
         while (true)
         //@ invariant CCSeqInv(seq);
         {

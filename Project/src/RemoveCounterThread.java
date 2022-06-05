@@ -16,7 +16,7 @@ class RemoveCounterThread implements Runnable {
     //@ requires pre(); 
     //@ ensures post();
     {
-        //TODO
+        //TODO query a counter’s value and remove it from the sequence, printing a log on the standard output
         while (true)
         //@ invariant CCSeqInv(seq);
         {
