@@ -10,7 +10,7 @@
 
  /*@ predicate CounterP(unit y,Counter c; unit b) = c != null &*& CounterInv(c,?a, ?l, ?o) &*& b == unit; @*/
  
- /*@ predicate CounterSequenceInv(CounterSequence cs; Counter[] s, int c, int n) = cs.sequence |-> s
+ /*@ predicate CounterSequenceInv(CounterSequence cs; int c, int n) = cs.sequence |-> ?s
                                                         &*& cs.capacity |-> c
                                                         &*& cs.nCounters |-> n
                                                         &*& n <= c
@@ -45,7 +45,7 @@ public class CounterSequence {
     
     public CounterSequence(int cap) 
         //@ requires cap > 0;
-        //@ ensures CounterSequenceInv(this, _, cap, 0);
+        //@ ensures CounterSequenceInv(this, cap, 0);
     {
         sequence = new Counter[cap];
         capacity  = cap;
@@ -54,7 +54,7 @@ public class CounterSequence {
    
     public CounterSequence(int[] arr) 
         //@ requires arr != null &*& arr.length > 0 &*& array_slice_deep(arr,0,arr.length,ValidLimit,unit,_,_);
-        //@ ensures CounterSequenceInv(this, _ ,arr.length, arr.length);
+        //@ ensures CounterSequenceInv(this, arr.length, arr.length);
     {
         capacity  = arr.length;
         sequence = new Counter[capacity];
@@ -78,22 +78,22 @@ public class CounterSequence {
     }
 
     public int length() 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n);
-        //@ ensures CounterSequenceInv(this, s , c, n) &*& result == n;
+        //@ requires CounterSequenceInv(this , ?c, ?n);
+        //@ ensures CounterSequenceInv(this , c, n) &*& result == n;
     {
         return nCounters;
     }
 
     public int capacity() 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n);
-        //@ ensures CounterSequenceInv(this, s , c, n) &*& result == c;
+        //@ requires CounterSequenceInv(this , ?c, ?n);
+        //@ ensures CounterSequenceInv(this , c, n) &*& result == c;
     {
         return capacity;
     }
 
     public int getCounter(int i) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n ;
-        //@ ensures CounterSequenceInv(this, s , c, n) &*& result >= 0;
+        //@ requires CounterSequenceInv(this , ?c, ?n) &*& i >= 0 &*& i < n ;
+        //@ ensures CounterSequenceInv(this , c, n) &*& result >= 0;
     { 
         int result = sequence[i].getVal();
     
@@ -102,23 +102,22 @@ public class CounterSequence {
     
    
     public int addCounter(int limit) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& limit > 0 &*& n < c;
-        /*@ ensures CounterSequenceInv(this, s , c, n + 1);@*/ 
+        //@ requires CounterSequenceInv(this , ?c, ?n) &*& limit > 0 &*& n < c;
+        /*@ ensures CounterSequenceInv(this , c, n + 1);@*/ 
     {
 
         Counter counter = new Counter(0, limit);
         
         sequence[nCounters] = counter;
         nCounters = nCounters + 1;
-        //@ array_slice_deep_close(sequence, n, CounterP, unit);
   
         return nCounters - 1;
     }
 
 
     public void remCounter(int pos)
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
-        //@ ensures CounterSequenceInv(this, s , c, n - 1);
+        //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
+        //@ ensures CounterSequenceInv(this, c, n - 1);
     
     {
         if(pos == nCounters - 1 ) {
@@ -139,8 +138,8 @@ public class CounterSequence {
         &*& array_slice_deep(seq, 0, i, CounterP, unit, _, _)*/
 
     public void remCounterPO(int pos) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
-        //@ ensures CounterSequenceInv(this, s , c, n - 1);
+        //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
+        //@ ensures CounterSequenceInv(this, c, n - 1);
     {
         // TODO
         // &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
@@ -150,32 +149,38 @@ public class CounterSequence {
         // &*& this.nCounters |-> ?nC 
         // &*& this.capacity |-> ?cap
         int i = pos+1;
+
+        // @ close CounterSequenceInv(this, ?cap, ?nC);
         
+        //QUESTION
+        //FIXME No matching heap chunks: CounterInv(elem, _, _, _)
         while(i < nCounters)
-    
-        /*@ invariant CounterSequenceInv(this, ?seq , ?cap, ?nC)
+        /*@ invariant CounterSequenceInv(this, ?cap, ?nC)
         &*& i <= nC &*& i >= pos +1
         ;@*/ 
         //@ decreases nCounters - i;
         {
+           
     
             Counter aux = sequence[i];
             sequence[i-1] = aux;
+            //@ array_slice_deep_close(sequence, i -1 , CounterP, unit);
             i = i+1;
+       
         }
         sequence[--nCounters] = null;
     }
 
     public void increment(int i, int val) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0;
-        //@ ensures CounterSequenceInv(this, s , c, n);
+        //@ requires CounterSequenceInv(this , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0;
+        //@ ensures CounterSequenceInv(this , c, n);
     {
         sequence[i].incr(val);
     }
 
     public void decrement(int i, int val) 
-        //@ requires CounterSequenceInv(this, ?s , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0;
-        //@ ensures CounterSequenceInv(this, s , c, n);
+        //@ requires CounterSequenceInv(this , ?c, ?n) &*& i >= 0 &*& i < n &*& val >= 0;
+        //@ ensures CounterSequenceInv(this , c, n);
     {
         sequence[i].decr(val);
     }

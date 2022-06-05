@@ -9,7 +9,7 @@
                                                             &*& c.limit |-> l 
                                                             &*& c.overflow |-> o
                                                             &*& a >= 0 &*& l > 0
-                                                            &*& (a >= l) ? o == true : true;
+                                                            &*& a < l;
 @*/
 
 public class Counter {
@@ -29,9 +29,9 @@ public class Counter {
 
     public int getVal() 
         //@ requires CounterInv(this, ?a, ?l, ?o);
-        //@ ensures CounterInv(this, a, l, o) &*& result ==  a % l;
+        //@ ensures CounterInv(this, a, l, o) &*& result >= 0 &*& result < l;
     {
-        return val % limit;
+        return val;
     }
 
     public int getLimit() 
@@ -43,12 +43,15 @@ public class Counter {
 
     public void incr(int v) 
         //@ requires CounterInv(this, ?a, ?l, ?o) &*& v >= 0;
-        //@ ensures CounterInv(this, a + v, l , o || (a + v >= l));
+        //@ ensures CounterInv(this, ((a + v >= l) ? ((a + v) % l)  : (a + v)), l , o || (a + v >= l));
     {
         if (val + v >= limit) {
             overflow = true;
-        } 
-        val += v;
+            val = (val+v) % limit;
+        } else {
+            val += v; 
+        }
+        
     }
 
     public void decr(int v) 

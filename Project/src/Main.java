@@ -8,6 +8,11 @@
 
 public class Main {
     public static void main(String[] args) {
+        CCSeq seq = new CCSeq(30);
+        for(int i = 0; i<100;i++){
+            new AddCounterThread(seq).run();
+            new 
+        }
         
     }
     
