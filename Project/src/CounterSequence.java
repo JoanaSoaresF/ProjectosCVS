@@ -22,19 +22,6 @@
                                 
                                                         ;
  @*/
- 
- //NOTE Apagar?
-/*@ predicate CounterSequenceInvPrevious(CounterSequence cs, int i; Counter[] s, int c, int n) = cs.sequence |-> s
-                                                        &*& cs.capacity |-> c
-                                                        &*& cs.nCounters |-> n
-                                                        &*& n <= c
-                                                        &*& s.length == c &*& c > 0
-                                                        &*& s != null
-                                                        &*& n >= 0 &*& n <= s.length
-                                                        &*& i >= 0 &*& i <= n
-                                                        &*& array_slice_deep(s,0,i,CounterP, unit, _, _) 
-                                                        &*& array_slice(s,i,c,?others)
-                                                        ;@*/
 
 public class CounterSequence {
 
@@ -109,9 +96,6 @@ public class CounterSequence {
         Counter counter = new Counter(0, limit);
         
         sequence[nCounters] = counter;
-        //NOTE apagar?
-        // @ array_slice_split(sequence, nCounters, nCounters+1);
-        // @ array_slice_deep_close(sequence, nCounters, CounterP, unit);
         nCounters = nCounters + 1;
   
         return nCounters - 1;
@@ -155,8 +139,7 @@ public class CounterSequence {
         //@ ensures CounterSequenceInv(this, c, n - 1);
     {
         int i = pos+1;
-        //QUESTION
-        //FIXME No matching heap chunks: CounterInv(elem, _, _, _)
+        //TODO alterar para o null
         //@ close CounterSequenceInv(this, c, n);
         while(i < nCounters)
         /*@ invariant 

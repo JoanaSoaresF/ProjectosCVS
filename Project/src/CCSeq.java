@@ -135,12 +135,16 @@ public class CCSeq {
         
             //@ open CCSeq_shared_state(this)();
             if (N == MAX)
-            /* @ invariant CCSeqInv(this)
+            /* @ invariant this.seq |-> ?cs &*& cs != null
+            &*& CounterSequenceInv(cs,_,_)
+            &*& N |-> ?nc &*& nc>=0
+            &*& MAX |-> ?mm &*& mm> 0 &*& nc<=mm
             &*& [f]notFull |-> ?cc &*& cc!=null
             &*& [f]cond(cc,CCSeq_shared_state(this),CCSeq_notfull(this))
             ;@*/
             {
-                //ATTENTION com while: No matching heap chunks: [_]CCSeq_N(this, _)
+                //QUESTION é preciso fazer com o while?
+                //ATTENTION com while: Cannot prove dummy == mm
                 //@ close CCSeq_shared_state(this)();
 
                 notFull.await();
@@ -165,9 +169,7 @@ public class CCSeq {
     public void remCounter(int i)
     //@ requires [?f]CCSeqInv(this) &*& i >= 0;
     //@ ensures [f]CCSeqInv(this);
-    {
-        // TODO
-        
+    {      
         try {
             //@ open [f]CCSeqInv(this);
             monitor.lock();
@@ -178,25 +180,22 @@ public class CCSeq {
                 monitor.unlock(); 
                 return;
             }
-
-
-                // valid index
-                if (N == 0) {
-                    //@ close CCSeq_shared_state(this)();
-                    notEmpty.await();
-                    //@ open CCSeq_notempty(this)();
-                    //@ assert N != 0;
-                }
-                seq.remCounter(i);
-                N--;
-                //@ close CCSeq_notfull(this)();
-                notFull.signal();
+            // valid index
+            if (N == 0) {
+                //@ close CCSeq_shared_state(this)();
+                notEmpty.await();
+                //@ open CCSeq_notempty(this)();
+                //@ assert N != 0;
+            }
+            seq.remCounter(i);
+            N--;
+            //@ close CCSeq_notfull(this)();
+            notFull.signal();
                 
             
             
         } catch (InterruptedException e) {}
-        // FIXME No matching heap chunks: [(0 - (0 - 1))]CCSeq_shared_state(this)()
-        // @ close CCSeq_shared_state(this)();
+ 
         monitor.unlock();
         //@ close [f]CCSeqInv(this);
     }

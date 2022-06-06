@@ -7,12 +7,20 @@
 
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    //@ requires System_out(?o) &*& o != null;
+    //@ ensures true;
+    {
         CCSeq seq = new CCSeq(30);
-        for(int i = 0; i<100;i++){
+        for(int i = 0; i<100;i++)
+        //@ invariant [_]CCSeqInv(seq);
+        {
             new AddCounterThread(seq).run();
-            new RemoveCounterThread(seq).run();
+            // new RemoveCounterThread(seq).run();
+          
+            
         }
+
         
     }
     
