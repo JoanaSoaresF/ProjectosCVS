@@ -11,15 +11,15 @@
  /*@ predicate CounterP(unit y,Counter c; unit b) = c != null &*& CounterInv(c,?a, ?l, ?o) &*& b == unit; @*/
  
  /*@ predicate CounterSequenceInv(CounterSequence cs; int c, int n) = cs.sequence |-> ?s
-                                                        &*& cs.capacity |-> c
-                                                        &*& cs.nCounters |-> n
-                                                        &*& n <= c
-                                                        &*& s.length == c &*& c > 0
-                                                        &*& s != null
-                                                        &*& n >= 0 &*& n <= s.length
-                                                        &*& array_slice_deep(s,0,n,CounterP, unit, _, _) 
-                                                        &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
-                                                       
+                                &*& cs.capacity |-> c
+                                &*& cs.nCounters |-> n
+                                &*& n <= c
+                                &*& s.length == c &*& c > 0
+                                &*& s != null
+                                &*& n >= 0 &*& n <= s.length
+                                &*& array_slice_deep(s,0,n,CounterP, unit, _, _) 
+                                &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
+                                
                                                         ;
  @*/
  
@@ -109,6 +109,9 @@ public class CounterSequence {
         Counter counter = new Counter(0, limit);
         
         sequence[nCounters] = counter;
+        //NOTE apagar?
+        // @ array_slice_split(sequence, nCounters, nCounters+1);
+        // @ array_slice_deep_close(sequence, nCounters, CounterP, unit);
         nCounters = nCounters + 1;
   
         return nCounters - 1;
@@ -136,36 +139,41 @@ public class CounterSequence {
 /*&*& this.sequence |-> ?seq &*& this.nCounters |-> ?nC &*& this.capacity |-> ?cap
         &*& nC <= cap &*& seq.length == cap
         &*& array_slice_deep(seq, 0, i, CounterP, unit, _, _)*/
-
-    public void remCounterPO(int pos) 
-        //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
-        //@ ensures CounterSequenceInv(this, c, n - 1);
-    {
-        // TODO
-        // &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
+                // &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
         // &*& array_slice_deep(seq,0,nC,CounterP, unit, _, _) 
 
         // &*& this.sequence |-> ?seq 
         // &*& this.nCounters |-> ?nC 
         // &*& this.capacity |-> ?cap
-        int i = pos+1;
 
         // @ close CounterSequenceInv(this, ?cap, ?nC);
-        
+
+         // @ array_slice_deep_close(sequence, i -1 , CounterP, unit);
+
+    public void remCounterPO(int pos) 
+        //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
+        //@ ensures CounterSequenceInv(this, c, n - 1);
+    {
+        int i = pos+1;
         //QUESTION
         //FIXME No matching heap chunks: CounterInv(elem, _, _, _)
+        //@ close CounterSequenceInv(this, c, n);
         while(i < nCounters)
-        /*@ invariant CounterSequenceInv(this, ?cap, ?nC)
-        &*& i <= nC &*& i >= pos +1
+        /*@ invariant 
+        CounterSequenceInv(this, c, n)
+        &*& i <= n &*& i >= pos +1
         ;@*/ 
-        //@ decreases nCounters - i;
+        // @ decreases nCounters - i;
         {
-           
-    
+           // @ close CounterSequenceInv(this, c, n);
             Counter aux = sequence[i];
+            // @ close CounterInv(aux, _, _,_);
             sequence[i-1] = aux;
-            //@ array_slice_deep_close(sequence, i -1 , CounterP, unit);
+            Counter dummy = new Counter(0, 1);
+            sequence[i] = dummy;
+            // @ close CounterInv(aux, _, _,);
             i = i+1;
+            // @ close CounterSequenceInv(this, c, n);
        
         }
         sequence[--nCounters] = null;

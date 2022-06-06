@@ -1,3 +1,4 @@
+
 /**
  * CVS 2021-22 Project- Task 2
  * Authors
@@ -10,7 +11,12 @@ import java.util.concurrent.locks.*;
 
 /*@
 predicate_ctor CCSeq_shared_state (CCSeq s) () = s.seq |-> ?cs &*& cs != null
-                                    &*& CounterSequenceInv(cs, _, _);
+                                    &*& s.N |-> ?n
+                                    &*& n >= 0
+                                    &*& s.MAX |-> ?m
+                                    &*& m > 0
+                                    &*& n <= m
+                                    &*& CounterSequenceInv(cs, m, n);
 @*/
 
 /*@ predicate CCSeqInv(CCSeq s;) = s.monitor |-> ?lock
@@ -26,31 +32,40 @@ predicate_ctor CCSeq_shared_state (CCSeq s) () = s.seq |-> ?cs &*& cs != null
 @*/
 
 /*@ 
-predicate_ctor CCSeq_notfull (CCSeq s) () = s.seq |-> ?cs 
-                                    &*& cs.capacity |-> ?c 
-                                    &*& cs.nCounters |-> ?n 
-                                    &*& n >= 0 &*& n < c;
+predicate_ctor CCSeq_notfull (CCSeq s) () = s.seq |-> ?cs &*& cs != null
+                                    &*& s.MAX |-> ?c 
+                                    &*& s.N |-> ?n 
+                                    &*& n >= 0 
+                                    &*& c > 0
+                                    &*& n < c
+                                    &*& CounterSequenceInv(cs, c, n);
 
-predicate_ctor CCSeq_notempty (CCSeq s) () = s.seq |-> ?cs 
-                                    &*& cs.capacity |-> ?c 
-                                    &*& cs.nCounters |-> ?n 
-                                    &*& n > 0 &*& n <= c;
+predicate_ctor CCSeq_notempty (CCSeq s) () = s.seq |-> ?cs &*& cs != null
+                                    &*& s.MAX |-> ?c 
+                                    &*& s.N |-> ?n 
+                                    &*& n > 0 
+                                    &*& c > 0
+                                    &*& n <= c
+                                    &*& CounterSequenceInv(cs, c, n);
 @*/
 
 public class CCSeq {
 
     CounterSequence seq;
+    int N;
+    int MAX;
     ReentrantLock monitor;
-    Condition notFull; 
+    Condition notFull;
     Condition notEmpty;
 
-    public CCSeq(int cap) 
+    public CCSeq(int cap)
     //@ requires cap > 0;
     //@ ensures CCSeqInv(this);
     {
-        // TODO
+        MAX = cap;
+        N = 0;
         seq = new CounterSequence(cap);
-        //@ close CCSeq_shared_state(this)(); 
+        //@ close CCSeq_shared_state(this)();
         //@ close enter_lck(1,CCSeq_shared_state(this));
         monitor = new ReentrantLock();
         //@ close set_cond(CCSeq_shared_state(this),CCSeq_notfull(this));
@@ -60,112 +75,130 @@ public class CCSeq {
         //@ close CCSeqInv(this);
     }
 
-    public int getCounter(int i) 
+    public int getCounter(int i)
     //@ requires [?f]CCSeqInv(this);
     //@ ensures [f]CCSeqInv(this);
     {
-        // TODO
         int result = -1;
         //@ open [f]CCSeqInv(this);
         monitor.lock();
-        //@ open CCSeq_shared_state(this)();
-        if(i >= 0  && i < seq.length()) {
-            //valid index
+        //@ open [?q]CCSeq_shared_state(this)();
+        if (i >= 0 && i < seq.length()) {
+            // valid index
             result = seq.getCounter(i);
-        } 
-        //@ close CCSeq_shared_state(this)();
+        }
+        //@ close [q]CCSeq_shared_state(this)();
         monitor.unlock();
         return result;
     }
 
-    public void incr(int i, int val) 
+    public void incr(int i, int val)
     //@ requires [?f]CCSeqInv(this);
     //@ ensures [f]CCSeqInv(this);
     {
-        // TODO
         //@ open [f]CCSeqInv(this);
         monitor.lock();
         //@ open CCSeq_shared_state(this)();
-        if(i >= 0 && i<seq.length() && val >= 0) {
-            //valid index
+        if (i >= 0 && i < seq.length() && val >= 0) {
+            // valid index
             seq.increment(i, val);
-        } 
+        }
         //@ close CCSeq_shared_state(this)();
         monitor.unlock();
+
+    }
+
+    public void decr(int i, int val)
+    //@ requires [?f]CCSeqInv(this);
+    //@ ensures [f]CCSeqInv(this);
+    {
+        //@ open [f]CCSeqInv(this);
+        monitor.lock();
+        //@ open CCSeq_shared_state(this)();
+        if (i >= 0 && i < seq.length() && val >= 0) {
+            // valid index
+            seq.decrement(i, val);
+        }
+        //@ close CCSeq_shared_state(this)();
+        monitor.unlock();
+    }
+
+    public int addCounter(int limit)
+    //@ requires [?f]CCSeqInv(this) &*& limit > 0;
+    //@ ensures [f]CCSeqInv(this);
+    {
+        int n = -1;
+        try {
+            //QUESTION f
+            //@ open [f]CCSeqInv(this);
+            monitor.lock();
+        
+            //@ open CCSeq_shared_state(this)();
+            if (N == MAX)
+            /* @ invariant CCSeqInv(this)
+            &*& [f]notFull |-> ?cc &*& cc!=null
+            &*& [f]cond(cc,CCSeq_shared_state(this),CCSeq_notfull(this))
+            ;@*/
+            {
+                //ATTENTION com while: No matching heap chunks: [_]CCSeq_N(this, _)
+                //@ close CCSeq_shared_state(this)();
+
+                notFull.await();
+                //@ open CCSeq_notfull(this)();
+                //@ assert N != MAX;
+
+            }
+        
+            seq.addCounter(limit);
+            n = N++;
+            //@ close CCSeq_notempty(this)();
+            notEmpty.signal();
+        } catch (InterruptedException e) {}
+    
+        monitor.unlock();
+        
+        return n;
+        //@ close [f]CCSeqInv(this);
         
     }
 
-    public void decr(int i, int val) 
-    //@ requires [?f]CCSeqInv(this);
+    public void remCounter(int i)
+    //@ requires [?f]CCSeqInv(this) &*& i >= 0;
     //@ ensures [f]CCSeqInv(this);
     {
         // TODO
-         //@ open [f]CCSeqInv(this);
-         monitor.lock();
-         //@ open CCSeq_shared_state(this)();
-         if(i >= 0 && i<seq.length() && val >= 0) {
-             //valid index
-             seq.decrement(i, val);
-         } 
-         //@ close CCSeq_shared_state(this)();
-         monitor.unlock();
-    }
-
-    public int addCounter(int limit) 
-    //@ requires [?f]CCSeqInv(this);
-    //@ ensures [f]CCSeqInv(this);
-    {
-        // TODO
-         //@ open [f]CCSeqInv(this);
-         monitor.lock();
-         //@ open CCSeq_shared_state(this)();
-         if(seq.length()== seq.capacity()) {
-             // @ close CCSeq_shared_state(this)();
-             try {
-                notFull.await();
-            } catch (InterruptedException e) {
-            }
-            //FIXME No matching heap chunks: CounterSequence_sequence(cs0, _)
-             //@ open CCSeq_notfull(this)();
-         } 
-    
-         int n = seq.length();
-         seq.addCounter(limit);
-         //@ close CCSeq_notempty(this)();
-         notEmpty.signal();
-         //@ close CCSeq_shared_state(this)();
-         monitor.unlock();
-         //@ close [f]CCSeqInv(this);
-        return n;
-    }
-
-    public void remCounter(int i) 
-    //@ requires [?f]CCSeqInv(this);
-    //@ ensures [f]CCSeqInv(this);
-    {
-        // TODO
+        
+        try {
             //@ open [f]CCSeqInv(this);
             monitor.lock();
             //@ open CCSeq_shared_state(this)();
 
-            if(i >= 0 && i<seq.capacity()) {
-                //valid index
-                if(seq.length()== 0) {
+            if (i >= N) { 
+                //@ close CCSeq_shared_state(this)();
+                monitor.unlock(); 
+                return;
+            }
+
+
+                // valid index
+                if (N == 0) {
                     //@ close CCSeq_shared_state(this)();
-                    try {
-                        notEmpty.await();
-                    } catch (InterruptedException e) {
-                    }
+                    notEmpty.await();
                     //@ open CCSeq_notempty(this)();
-                } 
-                //FIXME No matching heap chunks: CounterSequence_sequence(cs0, _)
+                    //@ assert N != 0;
+                }
                 seq.remCounter(i);
+                N--;
                 //@ close CCSeq_notfull(this)();
                 notFull.signal();
-            } 
-            //@ close CCSeq_shared_state(this)();
-            monitor.unlock();
-            //@ close [f]CCSeqInv(this);
+                
+            
+            
+        } catch (InterruptedException e) {}
+        // FIXME No matching heap chunks: [(0 - (0 - 1))]CCSeq_shared_state(this)()
+        // @ close CCSeq_shared_state(this)();
+        monitor.unlock();
+        //@ close [f]CCSeqInv(this);
     }
 
 }
