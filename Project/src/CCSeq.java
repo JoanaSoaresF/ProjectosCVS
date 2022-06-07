@@ -11,6 +11,14 @@ import java.util.concurrent.locks.*;
 
 /*@
 predicate_ctor CCSeq_shared_state (CCSeq s) () = s.seq |-> ?cs &*& cs != null
+                                    &*& CounterSequenceInv(cs, ?m, ?n)
+                                    &*& m > 0 &*& n >= 0
+                                    &*& n <= m;
+@*/
+
+//NOTE apagar?
+/* @
+predicate_ctor CCSeq_shared_state (CCSeq s) () = s.seq |-> ?cs &*& cs != null
                                     &*& s.N |-> ?n
                                     &*& n >= 0
                                     &*& s.MAX |-> ?m
@@ -33,6 +41,19 @@ predicate_ctor CCSeq_shared_state (CCSeq s) () = s.seq |-> ?cs &*& cs != null
 
 /*@ 
 predicate_ctor CCSeq_notfull (CCSeq s) () = s.seq |-> ?cs &*& cs != null
+                                    &*& CounterSequenceInv(cs, ?c, ?n)
+                                    &*& n >= 0 
+                                    &*& c > 0
+                                    &*& n < c;
+
+predicate_ctor CCSeq_notempty (CCSeq s) () = s.seq |-> ?cs &*& cs != null
+                                    &*& CounterSequenceInv(cs, ?m, ?n)
+                                    &*& m > 0 &*& n >= 0
+                                    &*& n <= m;
+@*/
+//NOTE apagar?
+/* @
+predicate_ctor CCSeq_notfull (CCSeq s) () = s.seq |-> ?cs &*& cs != null
                                     &*& s.MAX |-> ?c 
                                     &*& s.N |-> ?n 
                                     &*& n >= 0 
@@ -47,13 +68,13 @@ predicate_ctor CCSeq_notempty (CCSeq s) () = s.seq |-> ?cs &*& cs != null
                                     &*& c > 0
                                     &*& n <= c
                                     &*& CounterSequenceInv(cs, c, n);
-@*/
+@*/ 
 
 public class CCSeq {
 
     CounterSequence seq;
-    int N;
-    int MAX;
+    //int N;
+    //int MAX;
     ReentrantLock monitor;
     Condition notFull;
     Condition notEmpty;
@@ -62,8 +83,8 @@ public class CCSeq {
     //@ requires cap > 0;
     //@ ensures CCSeqInv(this);
     {
-        MAX = cap;
-        N = 0;
+        //MAX = cap;
+        //N = 0;
         seq = new CounterSequence(cap);
         //@ close CCSeq_shared_state(this)();
         //@ close enter_lck(1,CCSeq_shared_state(this));
@@ -134,11 +155,11 @@ public class CCSeq {
             monitor.lock();
         
             //@ open CCSeq_shared_state(this)();
-            while (N == MAX)
+            while (seq.length() == seq.capacity())
             /*@ invariant this.seq |-> ?cs &*& cs != null
-            &*& CounterSequenceInv(cs,_,_)
-            &*& N |-> ?nc &*& nc>=0
-            &*& MAX |-> ?mm &*& mm> 0 &*& nc<=mm
+            &*& CounterSequenceInv(cs,?mm,?nc)
+            &*& nc>=0
+            &*& mm> 0 &*& nc<=mm
             &*& [f]notFull |-> ?cc &*& cc!=null
             &*& [f]cond(cc,CCSeq_shared_state(this),CCSeq_notfull(this))
             ;@*/
@@ -153,12 +174,11 @@ public class CCSeq {
 
                 notFull.await();
                 //@ open CCSeq_notfull(this)();
-                //@ assert N != MAX;
 
             }
         
             seq.addCounter(limit);
-            n = N++;
+            n = seq.length()-1;//N++;
             //@ close CCSeq_notempty(this)();
             notEmpty.signal();
         } catch (InterruptedException e) {}
@@ -174,33 +194,53 @@ public class CCSeq {
     //@ requires [?f]CCSeqInv(this) &*& i >= 0;
     //@ ensures [f]CCSeqInv(this);
     {      
-        try {
-            //@ open [f]CCSeqInv(this);
-            monitor.lock();
-            //@ open CCSeq_shared_state(this)();
-            //TODO fazer ocm o while
+        
+        //@ open [f]CCSeqInv(this);
+        monitor.lock();
+        //@ open CCSeq_shared_state(this)();
+        //TODO fazer ocm o while
 
-            if (i >= N) { 
-                //@ close CCSeq_shared_state(this)();
-                monitor.unlock(); 
-                return;
-            }
+        
+        if (i < seq.length()) { 
+            // @ close CCSeq_shared_state(this)();
+            //monitor.unlock(); 
+            //return;
+        
+            
             // valid index
-            if (N == 0) {
+            while (seq.length() == 0) 
+                /*@ invariant this.seq |-> ?cs &*& cs != null
+            &*& CounterSequenceInv(cs,?mm,?nc)
+            &*& nc>=0
+            &*& mm> 0 &*& nc<=mm
+            &*& [f]notEmpty |-> ?cc &*& cc!=null
+            &*& [f]cond(cc,CCSeq_shared_state(this),CCSeq_notempty(this))
+            ;@*/
+            {
+
                 //@ close CCSeq_shared_state(this)();
-                notEmpty.await();
+                try {notEmpty.await();} catch (InterruptedException e) {}
                 //@ open CCSeq_notempty(this)();
-                //@ assert N != 0;
+
             }
-            seq.remCounter(i);
-            N--;
-            //@ close CCSeq_notfull(this)();
-            notFull.signal();
-                
             
-            
-        } catch (InterruptedException e) {}
- 
+            //12 val escolha multipla, testing, pre e pos em verifast, tratamento aliasing, fraçoes, predicados
+            //precisamos de slices e slice deeps
+
+            // @ open CCSeq_shared_state(this)();
+
+             if (i < seq.length()) { 
+                seq.remCounter(i);
+                //@ close CCSeq_notfull(this)();
+                notFull.signal();
+            } 
+        }
+        
+        //@ close counterSequenceInv(cs,_,_);
+
+        //@ close CCSeq_shared_state(this)();
+        //tabom, corre
+        //o stor já se está a ir embora... já nao vou perguntar...
         monitor.unlock();
         //@ close [f]CCSeqInv(this);
     }
