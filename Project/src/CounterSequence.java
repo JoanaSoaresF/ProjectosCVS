@@ -117,23 +117,6 @@ public class CounterSequence {
         }
     }
 
-// invariant array_slice_deep(s, 0, i, CounterP, unit, _, _) 
-// &*& CounterSequenceInvPrevious(this, i, s , c, n)
-// &*& array_slice(s,0,n,?others)
-/*&*& this.sequence |-> ?seq &*& this.nCounters |-> ?nC &*& this.capacity |-> ?cap
-        &*& nC <= cap &*& seq.length == cap
-        &*& array_slice_deep(seq, 0, i, CounterP, unit, _, _)*/
-                // &*& array_slice(s,n,c,?others) &*& all_eq(others, null) == true
-        // &*& array_slice_deep(seq,0,nC,CounterP, unit, _, _) 
-
-        // &*& this.sequence |-> ?seq 
-        // &*& this.nCounters |-> ?nC 
-        // &*& this.capacity |-> ?cap
-
-        // @ close CounterSequenceInv(this, ?cap, ?nC);
-
-         // @ array_slice_deep_close(sequence, i -1 , CounterP, unit);
-
     public void remCounterPO(int pos) 
         //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
         //@ ensures CounterSequenceInv(this, c, n - 1);
@@ -148,16 +131,11 @@ public class CounterSequence {
         ;@*/ 
         // @ decreases nCounters - i;
         {
-           // @ close CounterSequenceInv(this, c, n);
             Counter aux = sequence[i];
-            // @ close CounterInv(aux, _, _,_);
             sequence[i-1] = aux;
             Counter dummy = new Counter(0, 1);
             sequence[i] = dummy;
-            // @ close CounterInv(aux, _, _,);
-            i = i+1;
-            // @ close CounterSequenceInv(this, c, n);
-       
+            i = i+1;       
         }
         sequence[--nCounters] = null;
     }
