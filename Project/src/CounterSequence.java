@@ -9,6 +9,7 @@
 
 
  /*@ predicate CounterP(unit y,Counter c; unit b) = c != null &*& CounterInv(c,?a, ?l, ?o) &*& b == unit; @*/
+  /*@ predicate NullP(unit y,Object c; unit b) = c == null &*& b == unit; @*/
  
  /*@ predicate CounterSequenceInv(CounterSequence cs; int c, int n) = cs.sequence |-> ?s
                                 &*& cs.capacity |-> c
@@ -138,28 +139,35 @@ public class CounterSequence {
         //@ requires CounterSequenceInv(this, ?c, ?n) &*& n >= 1 &*& pos >= 0 &*& pos < n;
         //@ ensures CounterSequenceInv(this, c, n - 1);
     {
-        int i = pos+1;
+        
+        int i = pos;
+        Counter aux;
         //TODO alterar para o null
-        //@ close CounterSequenceInv(this, c, n);
-        while(i < nCounters)
-        /*@ invariant 
-        CounterSequenceInv(this, c, n)
-        &*& i <= n &*& i >= pos +1
+        sequence[pos] = null;
+        nCounters--;
+
+        // @ open CounterSequenceInv(this, c, n);
+        while(i < nCounters-1)
+        /*@ invariant this.sequence |-> ?cs &*& cs != null
+        &*& this.nCounters |-> ?nc
+        &*& this.capacity |-> ?cap
+        &*& i <= n &*& i >=pos &*& nc <= cap &*& cap > 0
+        &*& array_slice_deep(cs,0,i,CounterP, unit, _, _) 
+        &*& array_slice(cs,i,i+1,?vs) &*& all_eq(vs, null) == true
+        &*& array_slice_deep(cs,i+1,n, CounterP, unit, _, _)
+        &*& array_slice(cs,n,c,?others) &*& all_eq(others, null) == true
         ;@*/ 
         // @ decreases nCounters - i;
         {
-           // @ close CounterSequenceInv(this, c, n);
-            Counter aux = sequence[i];
-            // @ close CounterInv(aux, _, _,_);
-            sequence[i-1] = aux;
-            Counter dummy = new Counter(0, 1);
-            sequence[i] = dummy;
-            // @ close CounterInv(aux, _, _,);
+            //FIXME No matching heap chunks: [_]java.lang.array_element<class Counter>(cs, (i + 1), _)
+            aux = sequence[i+1];
+            sequence[i] = aux;
+            sequence[i+1] = null;
             i = i+1;
-            // @ close CounterSequenceInv(this, c, n);
        
         }
-        sequence[--nCounters] = null;
+        
+        // sequence[--nCounters] = null;
     }
 
     public void increment(int i, int val) 

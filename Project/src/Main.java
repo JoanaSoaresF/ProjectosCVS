@@ -4,6 +4,8 @@
  * Gonçalo Martins Lourenço nº55780
  * Joana Soares Faria nº55754
  */
+// AddCounterThread.java
+// RemoveCounterThread.java
 
 
 public class Main {
