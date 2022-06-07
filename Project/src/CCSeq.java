@@ -129,13 +129,13 @@ public class CCSeq {
     {
         int n = -1;
         try {
-            //QUESTION f
+            //NOTE este f pode ou nao ficar
             //@ open [f]CCSeqInv(this);
             monitor.lock();
         
             //@ open CCSeq_shared_state(this)();
-            if (N == MAX)
-            /* @ invariant this.seq |-> ?cs &*& cs != null
+            while (N == MAX)
+            /*@ invariant this.seq |-> ?cs &*& cs != null
             &*& CounterSequenceInv(cs,_,_)
             &*& N |-> ?nc &*& nc>=0
             &*& MAX |-> ?mm &*& mm> 0 &*& nc<=mm
@@ -143,8 +143,12 @@ public class CCSeq {
             &*& [f]cond(cc,CCSeq_shared_state(this),CCSeq_notfull(this))
             ;@*/
             {
-                //QUESTION é preciso fazer com o while?
+                //
+                //
+                
+                //TODO fazer com o while
                 //ATTENTION com while: Cannot prove dummy == mm
+                
                 //@ close CCSeq_shared_state(this)();
 
                 notFull.await();
@@ -174,6 +178,7 @@ public class CCSeq {
             //@ open [f]CCSeqInv(this);
             monitor.lock();
             //@ open CCSeq_shared_state(this)();
+            //TODO fazer ocm o while
 
             if (i >= N) { 
                 //@ close CCSeq_shared_state(this)();

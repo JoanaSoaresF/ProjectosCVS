@@ -122,7 +122,7 @@ public class CounterSequence {
         //@ ensures CounterSequenceInv(this, c, n - 1);
     {
         int i = pos+1;
-        //TODO alterar para o null
+        //NOTE não é necessário alterar para o null
         //@ close CounterSequenceInv(this, c, n);
         while(i < nCounters)
         /*@ invariant 

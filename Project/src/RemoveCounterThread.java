@@ -6,40 +6,48 @@
  */
 
 /*@ predicate RemoveThreadInv(RemoveCounterThread t;) = t.seq |-> ?s &*& s != null
-&*& [_]CCSeqInv(s)
+&*& [_]CCSeqInv(s) &*& t.i |-> ?index &*& index >=0
 ;@*/
 
 class RemoveCounterThread implements Runnable {
 
     public CCSeq seq;
-    //TODO corrigir thread
-    //@ predicate pre() = RemoveThreadInv(this);
+    int i;
+    
+    /*@ predicate pre() = RemoveThreadInv(this) &*& [_]System_out(?s) &*& s != null; @*/
     //@ predicate post() = true;
 
-    public RemoveCounterThread(CCSeq seq)
-    //@ requires seq != null &*& [_]CCSeqInv(seq); 
+    public RemoveCounterThread(CCSeq seq, int i)
+    //@ requires seq != null &*& [_]CCSeqInv(seq) &*& i >=0; 
     //@ ensures RemoveThreadInv(this); 
     {
         this.seq = seq;
+        this.i = i;
     }
 
     public void run() 
-    //@ requires [_]System_out(?s) &*& pre(); 
+    //@ requires pre(); 
     //@ ensures post();
     {
-        //QUESTION
-        //FIXME No matching heap chunks: [_]java.lang.System_out(_)
-        //TODO por parametro no contrutor para que counter apagar
-
         //@ open pre();
 
-        int c = seq.getCounter(0);
+        int c = seq.getCounter(i);
         // @ open [_]System_out(?s);
-        System.out.printf("Counter 0 with value: %d\n", c);
-        seq.remCounter(0);
-        System.out.printf("Removed counter 0\n");
+    
+        // String s = String.format("Counter %d with value: %d", i, c);
+        System.out.print("Counter ");
+        System.out.print(i);
+        System.out.print(" with value: ");
+        System.out.print(c);
+        System.out.println("");
 
-        //@ close pos();
+        seq.remCounter(0);
+        System.out.print("Removed counter from position ");
+        System.out.print(i);
+        System.out.println("");
+        
+
+        //@ close post();
             
         
     }
