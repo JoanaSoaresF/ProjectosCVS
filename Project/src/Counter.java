@@ -47,7 +47,7 @@ public class Counter {
     {
         if (val + v >= limit) {
             overflow = true;
-            val = (val+v) % limit;
+            val = (val + v) % limit;
         } else {
             val += v; 
         }

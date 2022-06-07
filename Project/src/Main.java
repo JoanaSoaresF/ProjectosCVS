@@ -5,7 +5,6 @@
  * Joana Soares Faria nº55754
  */
 
-
 public class Main {
     public static void main(String[] args) 
     //@ requires System_out(?o) &*& o != null;
@@ -13,26 +12,11 @@ public class Main {
     {
         CCSeq seq = new CCSeq(30);
         for(int i = 0; i<100;i++)
-        //@ invariant [_]CCSeqInv(seq) &*& [_]System_out(?s) &*& s != null;
+        //@ invariant [_]CCSeqInv(seq) &*& [_]System_out(?s) &*& s != null &*& i >= 0 &*& i<=100;
         {
-    
             new Thread(new AddCounterThread(seq)).start();
-            new Thread(new RemoveCounterThread(seq, 0)).start();
-            
+            new Thread(new RemoveCounterThread(seq, 99-i)).start();
         }
-        
-        
-        // for (int i = 50; i < 100; i++)
-        // // @ invariant [_]CCSeqInv(seq) &*& [_]System_out(?s) &*& s != null;
-        // {
-        //     // também não existem outras coisas que não sejam string,
-        //     // temos de meter tudo como string no print
-
-        //     new Thread(new AddCounterThread(seq)).start();
-        //     // new RemoveCounterThread(seq).run();
-
-        // }
-        
     }
     
 }

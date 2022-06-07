@@ -14,7 +14,7 @@ class RemoveCounterThread implements Runnable {
     public CCSeq seq;
     int i;
     
-    /*@ predicate pre() = RemoveThreadInv(this) &*& [_]System_out(?s) &*& s != null; @*/
+    //@ predicate pre() = RemoveThreadInv(this) &*& [_]System_out(?s) &*& s != null;
     //@ predicate post() = true;
 
     public RemoveCounterThread(CCSeq seq, int i)
@@ -30,25 +30,20 @@ class RemoveCounterThread implements Runnable {
     //@ ensures post();
     {
         //@ open pre();
-
         int c = seq.getCounter(i);
-        // @ open [_]System_out(?s);
-    
-        // String s = String.format("Counter %d with value: %d", i, c);
-        System.out.print("Counter ");
-        System.out.print(i);
-        System.out.print(" with value: ");
-        System.out.print(c);
-        System.out.println("");
-
-        seq.remCounter(0);
-        System.out.print("Removed counter from position ");
-        System.out.print(i);
-        System.out.println("");
+        String valueString = "Counter " + String.valueOf(i) + " with value: " + String.valueOf(c);
+        System.out.println(valueString);
+        if(c != -1) {
+            // valid counter
+            seq.remCounter(0);
+            String removedString = "Removed counter from position " + String.valueOf(i);
+            System.out.println(removedString);
+        } else {
+            String invalidCounterString = "Counter " + String.valueOf(i) + " does not exist";
+            System.out.println(invalidCounterString);
+        }
         
-
         //@ close post();
             
-        
     }
 }
