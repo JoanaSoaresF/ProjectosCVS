@@ -1,9 +1,13 @@
+/**
+ * CVS 2021-22 Project- Task 2
+ * Authors
+ * Gonçalo Martins Lourenço nº55780
+ * Joana Soares Faria nº55754
+ */
 
 /*@ predicate AddThreadInv(AddCounterThread t;) = t.seq |-> ?s &*& s != null
 &*& [_]CCSeqInv(s)
 ;@*/
-
-
 
 class AddCounterThread implements Runnable {
     //@ predicate pre() = AddThreadInv(this);
